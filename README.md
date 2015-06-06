@@ -2,20 +2,15 @@
 
 This is a small Haskell library for simplifying the process of writing
 `Storable` instances for data types which have trivial `Storable` instance
-implementations. These are data types that fulfill two requirements:
-
-* The data type has only one data constructor (no sum types)
-* Every component of the data type is itself an instance of `Storable`
-
-These requirements can be summed up simply as being isomorphic to some N-tuple
-where every field in the tuple is an instance of `Storable`.
+implementations. These are data types that only contain fields that are
+themselves instances of `Storable`.
 
 ## Using AutoStorable
 
-The recommended way to use AutoStorable is to define an isomorphism between your
-data type and one of AutoStorable's tuple types using `withIso`, and then using
-that combinator with `autoSizeOf`, `autoAlignment`, `autoPeek`, and `autoPoke`
-to define your `Storable` instance. Here is a full example:
+The recommended way to use AutoStorable is to define an isomorphism between
+your data type and one of AutoStorable's data types using `withIso`, and then
+using that combinator with `autoSizeOf`, `autoAlignment`, `autoPeek`, and
+`autoPoke` to define your `Storable` instance. Here is a full example:
 
     data MyData = MyData Int Float Bool
 
