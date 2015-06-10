@@ -25,3 +25,15 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -fllvm
+
+test-suite test-autostorable
+  type:                exitcode-stdio-1.0
+  main-is:             AutoStorableTests.hs
+  build-depends:       base >=4.7 && <4.8
+                     , autostorable
+                     , tasty >=0.7
+                     , tasty-quickcheck >=0.8 && <0.9
+                     , QuickCheck >=2.8 && <2.9
+                     , Cabal >= 1.9.2
+  hs-source-dirs:      test
+  default-language:    Haskell2010
