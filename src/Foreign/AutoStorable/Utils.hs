@@ -16,6 +16,8 @@ module Foreign.AutoStorable.Utils
 , sizePadded
 , sizeTagged
 , peekShift
+, peekTag
+, getTag
 , pokeShift
 , runPeek
 , runPoke
@@ -66,11 +68,11 @@ sizePadded a i = i + sizeOf a + padding
 cchar :: CChar
 cchar = undefined
 
--- | Given a 'Storable' value, produces its size when preceded by a 1-byte tag.
+-- | Given a 'Storable' value, produces its size when succeeded by a 1-byte tag.
 -- This size will properly account for alignment constraints assuming the given
 -- value's 'Storable' instance also properly accounts for it.
 sizeTagged :: Storable a => a -> Int
-sizeTagged a = (sizeOf cchar `max` alignment a) + sizeOf a
+sizeTagged a = sizeOf a + (sizeOf cchar `max` alignment cchar)
 
 -- | Given a 'Storable' value, produces a 'StateT' action that performs a 'peek'
 -- through the 'Ptr' being held in the 'StateT' and then shifting the 'Ptr' by
@@ -85,6 +87,20 @@ peekShift b = do
     b' <- lift $ peek (castPtr ptr `asTypeOf` wrap b)
     put (ptr `plusPtr` sizeOf b)
     return b'
+
+-- | Given an offset, produces a 'StateT' action that performs a 'peek' through
+-- the 'Ptr' being held in the 'StateT' at the given offset as a 'CChar', which
+-- is the type used for tagging sum types.
+peekTag :: Int -> StateT (Ptr a) IO CChar
+peekTag i = do
+    ptr <- fmap (\ptr0 -> alignPtr (ptr0 `plusPtr` i) (alignment cchar)) get
+    lift (peek ptr)
+
+-- | Given an offset and a 'Ptr', attempts to read the tag at the given offset
+-- for the given pointer. The tag is a 'CChar' used to discriminate constructors
+-- in a sum type.
+getTag :: Int -> Ptr a -> IO CChar
+getTag i ptr = runPeek (castPtr ptr) (peekTag i)
 
 -- | Given a 'Storable' value, produces a 'StateT' action that performs a 'poke'
 -- through the 'Ptr' being held in the 'StateT' with the given value. It will
@@ -110,8 +126,10 @@ runPoke ptr st = evalStateT st (alignPtr ptr (alignment (unwrap ptr)))
 -- value with the tag preceding it.
 runPokeTagged :: (Storable a, Storable b) => Ptr a -> CChar -> b -> IO ()
 runPokeTagged ptr i b = runPoke ptr $ do
+    ptr' <- fmap (\ptr0 -> alignPtr ptr0 (alignment b)) get
+    lift $ poke (castPtr ptr' `asTypeOf` wrap b) b
+    put (ptr' `plusPtr` (sizeOf (unwrap ptr) - sizeOf i))
     pokeShift i
-    pokeShift b
 
 sapp2 :: (Storable a, Storable b)
       => (forall x. Storable x => x -> r) -> (r -> r -> r)

@@ -184,7 +184,7 @@ testT3aMarshalTest c i b = monadicIO $ do
 
 -- T4 tests
 
-data TestT4a = TestT4a Char Int Bool Float
+data TestT4a = TestT4a Char Int Bool Double
     deriving (Eq)
 
 testT4aIso = defineIso to from
@@ -198,7 +198,7 @@ instance Storable TestT4a where
     peek = testT4aIso autoPeek
     poke = testT4aIso autoPoke
 
-testT4aMarshalTest :: Char -> Int -> Bool -> Float -> Property
+testT4aMarshalTest :: Char -> Int -> Bool -> Double -> Property
 testT4aMarshalTest c i b f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -207,7 +207,7 @@ testT4aMarshalTest c i b f = monadicIO $ do
 
 -- T5 tests
 
-data TestT5a = TestT5a Char Int Bool Float Char
+data TestT5a = TestT5a Char Int Bool Double Char
     deriving (Eq)
 
 testT5aIso = defineIso to from
@@ -221,7 +221,7 @@ instance Storable TestT5a where
     peek = testT5aIso autoPeek
     poke = testT5aIso autoPoke
 
-testT5aMarshalTest :: Char -> Int -> Bool -> Float -> Char -> Property
+testT5aMarshalTest :: Char -> Int -> Bool -> Double -> Char -> Property
 testT5aMarshalTest c1 i b f c2 = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -230,7 +230,7 @@ testT5aMarshalTest c1 i b f c2 = monadicIO $ do
 
 -- T6 tests
 
-data TestT6a = TestT6a Char Int Bool Float Char Int
+data TestT6a = TestT6a Char Int Bool Double Char Int
     deriving (Eq)
 
 testT6aIso = defineIso to from
@@ -244,7 +244,7 @@ instance Storable TestT6a where
     peek = testT6aIso autoPeek
     poke = testT6aIso autoPoke
 
-testT6aMarshalTest :: Char -> Int -> Bool -> Float -> Char -> Int -> Property
+testT6aMarshalTest :: Char -> Int -> Bool -> Double -> Char -> Int -> Property
 testT6aMarshalTest c1 i1 b f c2 i2 = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -253,7 +253,7 @@ testT6aMarshalTest c1 i1 b f c2 i2 = monadicIO $ do
 
 -- T7 tests
 
-data TestT7a = TestT7a Char Int Bool Float Char Int Bool
+data TestT7a = TestT7a Char Int Bool Double Char Int Bool
     deriving (Eq)
 
 testT7aIso = defineIso to from
@@ -267,7 +267,7 @@ instance Storable TestT7a where
     peek = testT7aIso autoPeek
     poke = testT7aIso autoPoke
 
-testT7aMarshalTest :: Char -> Int -> Bool -> Float -> Char -> Int -> Bool
+testT7aMarshalTest :: Char -> Int -> Bool -> Double -> Char -> Int -> Bool
                    -> Property
 testT7aMarshalTest c1 i1 b1 f c2 i2 b2 = monadicIO $ do
     testData' <- run (with testData peek)
@@ -277,7 +277,7 @@ testT7aMarshalTest c1 i1 b1 f c2 i2 b2 = monadicIO $ do
 
 -- T8 tests
 
-data TestT8a = TestT8a Char Int Bool Float Char Int Bool Float
+data TestT8a = TestT8a Char Int Bool Double Char Int Bool Double
     deriving (Eq)
 
 testT8aIso = defineIso to from
@@ -291,8 +291,8 @@ instance Storable TestT8a where
     peek = testT8aIso autoPeek
     poke = testT8aIso autoPoke
 
-testT8aMarshalTest :: Char -> Int -> Bool -> Float -> Char -> Int -> Bool
-                   -> Float -> Property
+testT8aMarshalTest :: Char -> Int -> Bool -> Double -> Char -> Int -> Bool
+                   -> Double -> Property
 testT8aMarshalTest c1 i1 b1 f1 c2 i2 b2 f2 = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -380,7 +380,7 @@ testS3acMarshalTest b = monadicIO $ do
 data TestS4a = TestS4aa Char
              | TestS4ab Int
              | TestS4ac Bool
-             | TestS4ad Float
+             | TestS4ad Double
     deriving (Eq)
 
 testS4aIso = defineIso to from
@@ -421,7 +421,7 @@ testS4acMarshalTest b = monadicIO $ do
   where
     testData = TestS4ac b
 
-testS4adMarshalTest :: Float -> Property
+testS4adMarshalTest :: Double -> Property
 testS4adMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -433,7 +433,7 @@ testS4adMarshalTest f = monadicIO $ do
 data TestS5a = TestS5aa Char
              | TestS5ab Int
              | TestS5ac Bool
-             | TestS5ad Float
+             | TestS5ad Double
              | TestS5ae Char
     deriving (Eq)
 
@@ -477,7 +477,7 @@ testS5acMarshalTest b = monadicIO $ do
   where
     testData = TestS5ac b
 
-testS5adMarshalTest :: Float -> Property
+testS5adMarshalTest :: Double -> Property
 testS5adMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -496,7 +496,7 @@ testS5aeMarshalTest c = monadicIO $ do
 data TestS6a = TestS6aa Char
              | TestS6ab Int
              | TestS6ac Bool
-             | TestS6ad Float
+             | TestS6ad Double
              | TestS6ae Char
              | TestS6af Int
     deriving (Eq)
@@ -543,7 +543,7 @@ testS6acMarshalTest b = monadicIO $ do
   where
     testData = TestS6ac b
 
-testS6adMarshalTest :: Float -> Property
+testS6adMarshalTest :: Double -> Property
 testS6adMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -569,7 +569,7 @@ testS6afMarshalTest i = monadicIO $ do
 data TestS7a = TestS7aa Char
              | TestS7ab Int
              | TestS7ac Bool
-             | TestS7ad Float
+             | TestS7ad Double
              | TestS7ae Char
              | TestS7af Int
              | TestS7ag Bool
@@ -619,7 +619,7 @@ testS7acMarshalTest b = monadicIO $ do
   where
     testData = TestS7ac b
 
-testS7adMarshalTest :: Float -> Property
+testS7adMarshalTest :: Double -> Property
 testS7adMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -652,11 +652,11 @@ testS7agMarshalTest b = monadicIO $ do
 data TestS8a = TestS8aa Char
              | TestS8ab Int
              | TestS8ac Bool
-             | TestS8ad Float
+             | TestS8ad Double
              | TestS8ae Char
              | TestS8af Int
              | TestS8ag Bool
-             | TestS8ah Float
+             | TestS8ah Double
     deriving (Eq)
 
 testS8aIso = defineIso to from
@@ -705,7 +705,7 @@ testS8acMarshalTest b = monadicIO $ do
   where
     testData = TestS8ac b
 
-testS8adMarshalTest :: Float -> Property
+testS8adMarshalTest :: Double -> Property
 testS8adMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')
@@ -733,7 +733,7 @@ testS8agMarshalTest b = monadicIO $ do
   where
     testData = TestS8ag b
 
-testS8ahMarshalTest :: Float -> Property
+testS8ahMarshalTest :: Double -> Property
 testS8ahMarshalTest f = monadicIO $ do
     testData' <- run (with testData peek)
     assert (testData == testData')

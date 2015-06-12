@@ -29,7 +29,6 @@ S8 (..)
 import Control.Applicative
 import Control.Arrow ((>>>))
 import Foreign.Storable
-import Foreign.C.Types
 
 import Foreign.AutoStorable.Utils
 
@@ -95,10 +94,6 @@ data S7 a b c d e f g = S7a a | S7b b | S7c c | S7d d | S7e e | S7f f | S7g g
 data S8 a b c d e f g h =
     S8a a | S8b b | S8c c | S8d d | S8e e | S8f f | S8g g | S8h h
     deriving (Show, Eq)
-
--- Just to give us a proxy to guide type inference
-cchar :: CChar
-cchar = undefined
 
 split2 :: S2 a b -> T2 a b
 split2 = undefined
@@ -271,11 +266,11 @@ instance (Storable a, Storable b) => Storable (S2 a b) where
     sizeOf s = sapp2 sizeTagged max a b
       where
         ~(T2 a b) = split2 s
-    alignment s = sapp3 alignment max cchar a b
+    alignment s = sapp2 alignment max a b
       where
         ~(T2 a b) = split2 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp2 sizeOf max a b)
         case tag of
             0 -> S2a <$> peekShift a
             _ -> S2b <$> peekShift b
@@ -288,11 +283,11 @@ instance (Storable a, Storable b, Storable c) => Storable (S3 a b c) where
     sizeOf s = sapp3 sizeTagged max a b c
       where
         ~(T3 a b c) = split3 s
-    alignment s = sapp4 alignment max cchar a b c
+    alignment s = sapp3 alignment max a b c
       where
         ~(T3 a b c) = split3 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp3 sizeOf max a b c)
         case tag of
             0 -> S3a <$> peekShift a
             1 -> S3b <$> peekShift b
@@ -308,11 +303,11 @@ instance (Storable a, Storable b, Storable c, Storable d)
     sizeOf s = sapp4 sizeTagged max a b c d
       where
         ~(T4 a b c d) = split4 s
-    alignment s = sapp5 alignment max cchar a b c d
+    alignment s = sapp4 alignment max a b c d
       where
         ~(T4 a b c d) = split4 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp4 sizeOf max a b c d)
         case tag of
             0 -> S4a <$> peekShift a
             1 -> S4b <$> peekShift b
@@ -330,11 +325,11 @@ instance (Storable a, Storable b, Storable c, Storable d, Storable e)
     sizeOf s = sapp5 sizeTagged max a b c d e
       where
         ~(T5 a b c d e) = split5 s
-    alignment s = sapp6 alignment max cchar a b c d e
+    alignment s = sapp5 alignment max a b c d e
       where
         ~(T5 a b c d e) = split5 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp5 sizeOf max a b c d e)
         case tag of
             0 -> S5a <$> peekShift a
             1 -> S5b <$> peekShift b
@@ -355,11 +350,11 @@ instance
     sizeOf s = sapp6 sizeTagged max a b c d e f
       where
         ~(T6 a b c d e f) = split6 s
-    alignment s = sapp7 alignment max cchar a b c d e f
+    alignment s = sapp6 alignment max a b c d e f
       where
         ~(T6 a b c d e f) = split6 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp6 sizeOf max a b c d e f)
         case tag of
             0 -> S6a <$> peekShift a
             1 -> S6b <$> peekShift b
@@ -383,11 +378,11 @@ instance
     sizeOf s = sapp7 sizeTagged max a b c d e f g
       where
         ~(T7 a b c d e f g) = split7 s
-    alignment s = sapp8 alignment max cchar a b c d e f g
+    alignment s = sapp7 alignment max a b c d e f g
       where
         ~(T7 a b c d e f g) = split7 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp7 sizeOf max a b c d e f g)
         case tag of
             0 -> S7a <$> peekShift a
             1 -> S7b <$> peekShift b
@@ -413,11 +408,11 @@ instance
     sizeOf s = sapp8 sizeTagged max a b c d e f g h
       where
         ~(T8 a b c d e f g h) = split8 s
-    alignment s = sapp9 alignment max cchar a b c d e f g h
+    alignment s = sapp8 alignment max a b c d e f g h
       where
         ~(T8 a b c d e f g h) = split8 s
     peek ptr = runPeek ptr $ do
-        tag <- peekShift cchar
+        tag <- peekTag (sapp8 sizeOf max a b c d e f g h)
         case tag of
             0 -> S8a <$> peekShift a
             1 -> S8b <$> peekShift b
