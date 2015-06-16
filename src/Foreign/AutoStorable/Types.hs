@@ -127,7 +127,7 @@ instance Storable a => Storable (T1 a) where
         pokeShift a
 
 instance (Storable a, Storable b) => Storable (T2 a b) where
-    sizeOf ~(T2 a b) = sapp2 sizePadded (>>>) a b $ 0
+    sizeOf ~t@(T2 a b) = fixPadding t . sapp2 sizePadded (>>>) a b $ 0
     alignment ~(T2 a b) = sapp2 alignment max a b
     peek ptr = runPeek ptr $ T2
         <$> peekShift a
@@ -139,7 +139,7 @@ instance (Storable a, Storable b) => Storable (T2 a b) where
         pokeShift b
 
 instance (Storable a, Storable b, Storable c) => Storable (T3 a b c) where
-    sizeOf ~(T3 a b c) = sapp3 sizePadded (>>>) a b c $ 0
+    sizeOf ~t@(T3 a b c) = fixPadding t . sapp3 sizePadded (>>>) a b c $ 0
     alignment ~(T3 a b c) = sapp3 alignment max a b c
     peek ptr = runPeek ptr $ T3
         <$> peekShift a
@@ -154,7 +154,7 @@ instance (Storable a, Storable b, Storable c) => Storable (T3 a b c) where
 
 instance (Storable a, Storable b, Storable c, Storable d)
     => Storable (T4 a b c d) where
-    sizeOf ~(T4 a b c d) = sapp4 sizePadded (>>>) a b c d $ 0
+    sizeOf ~t@(T4 a b c d) = fixPadding t . sapp4 sizePadded (>>>) a b c d $ 0
     alignment ~(T4 a b c d) = sapp4 alignment max a b c d
     peek ptr = runPeek ptr $ T4
         <$> peekShift a
@@ -171,7 +171,8 @@ instance (Storable a, Storable b, Storable c, Storable d)
 
 instance (Storable a, Storable b, Storable c, Storable d, Storable e)
     => Storable (T5 a b c d e) where
-    sizeOf ~(T5 a b c d e) = sapp5 sizePadded (>>>) a b c d e $ 0
+    sizeOf ~t@(T5 a b c d e) =
+        fixPadding t . sapp5 sizePadded (>>>) a b c d e $ 0
     alignment ~(T5 a b c d e) = sapp5 alignment max a b c d e
     peek ptr = runPeek ptr $ T5
         <$> peekShift a
@@ -191,7 +192,8 @@ instance (Storable a, Storable b, Storable c, Storable d, Storable e)
 instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f)
     => Storable (T6 a b c d e f) where
-    sizeOf ~(T6 a b c d e f) = sapp6 sizePadded (>>>) a b c d e f $ 0
+    sizeOf ~t@(T6 a b c d e f) =
+        fixPadding t . sapp6 sizePadded (>>>) a b c d e f $ 0
     alignment ~(T6 a b c d e f) = sapp6 alignment max a b c d e f
     peek ptr = runPeek ptr $ T6
         <$> peekShift a
@@ -214,7 +216,8 @@ instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f,
      Storable g)
     => Storable (T7 a b c d e f g) where
-    sizeOf ~(T7 a b c d e f g) = sapp7 sizePadded (>>>) a b c d e f g $ 0
+    sizeOf ~t@(T7 a b c d e f g) =
+        fixPadding t . sapp7 sizePadded (>>>) a b c d e f g $ 0
     alignment ~(T7 a b c d e f g) = sapp7 alignment max a b c d e f g
     peek ptr = runPeek ptr $ T7
         <$> peekShift a
@@ -239,7 +242,8 @@ instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f,
      Storable g, Storable h)
     => Storable (T8 a b c d e f g h) where
-    sizeOf ~(T8 a b c d e f g h) = sapp8 sizePadded (>>>) a b c d e f g h $ 0
+    sizeOf ~t@(T8 a b c d e f g h) =
+        fixPadding t . sapp8 sizePadded (>>>) a b c d e f g h $ 0
     alignment ~(T8 a b c d e f g h) = sapp8 alignment max a b c d e f g h
     peek ptr = runPeek ptr $ T8
         <$> peekShift a
@@ -263,51 +267,61 @@ instance
         pokeShift h
 
 instance (Storable a, Storable b) => Storable (S2 a b) where
-    sizeOf s = sapp2 sizeTagged max a b
+    sizeOf s = fixPadding s $ sapp2 sizeTagged max a b
       where
         ~(T2 a b) = split2 s
     alignment s = sapp2 alignment max a b
       where
         ~(T2 a b) = split2 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp2 sizeOf max a b)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S2a <$> peekShift a
             _ -> S2b <$> peekShift b
       where
         ~(T2 a b) = split2 (unwrap ptr)
-    poke ptr (S2a a) = runPokeTagged ptr 0 a
-    poke ptr (S2b b) = runPokeTagged ptr 1 b
+        tagOffset = sapp2 sizeOf max a b
+    poke ptr s = case s of
+        S2a a -> runPokeTagged ptr 0 tagOffset a
+        S2b b -> runPokeTagged ptr 1 tagOffset b
+      where
+        ~(T2 a' b') = split2 (unwrap ptr)
+        tagOffset = sapp2 sizeOf max a' b'
 
 instance (Storable a, Storable b, Storable c) => Storable (S3 a b c) where
-    sizeOf s = sapp3 sizeTagged max a b c
+    sizeOf s = fixPadding s $ sapp3 sizeTagged max a b c
       where
         ~(T3 a b c) = split3 s
     alignment s = sapp3 alignment max a b c
       where
         ~(T3 a b c) = split3 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp3 sizeOf max a b c)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S3a <$> peekShift a
             1 -> S3b <$> peekShift b
             _ -> S3c <$> peekShift c
       where
         ~(T3 a b c) = split3 (unwrap ptr)
-    poke ptr (S3a a) = runPokeTagged ptr 0 a
-    poke ptr (S3b b) = runPokeTagged ptr 1 b
-    poke ptr (S3c c) = runPokeTagged ptr 2 c
+        tagOffset = sapp3 sizeOf max a b c
+    poke ptr s = case s of
+        S3a a -> runPokeTagged ptr 0 tagOffset a
+        S3b b -> runPokeTagged ptr 1 tagOffset b
+        S3c c -> runPokeTagged ptr 2 tagOffset c
+      where
+        ~(T3 a' b' c') = split3 (unwrap ptr)
+        tagOffset = sapp3 sizeOf max a' b' c'
 
 instance (Storable a, Storable b, Storable c, Storable d)
     => Storable (S4 a b c d) where
-    sizeOf s = sapp4 sizeTagged max a b c d
+    sizeOf s = fixPadding s $ sapp4 sizeTagged max a b c d
       where
         ~(T4 a b c d) = split4 s
     alignment s = sapp4 alignment max a b c d
       where
         ~(T4 a b c d) = split4 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp4 sizeOf max a b c d)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S4a <$> peekShift a
             1 -> S4b <$> peekShift b
@@ -315,21 +329,26 @@ instance (Storable a, Storable b, Storable c, Storable d)
             _ -> S4d <$> peekShift d
       where
         ~(T4 a b c d) = split4 (unwrap ptr)
-    poke ptr (S4a a) = runPokeTagged ptr 0 a
-    poke ptr (S4b b) = runPokeTagged ptr 1 b
-    poke ptr (S4c c) = runPokeTagged ptr 2 c
-    poke ptr (S4d d) = runPokeTagged ptr 3 d
+        tagOffset = sapp4 sizeOf max a b c d
+    poke ptr s = case s of
+        S4a a -> runPokeTagged ptr 0 tagOffset a
+        S4b b -> runPokeTagged ptr 1 tagOffset b
+        S4c c -> runPokeTagged ptr 2 tagOffset c
+        S4d d -> runPokeTagged ptr 3 tagOffset d
+      where
+        ~(T4 a' b' c' d') = split4 (unwrap ptr)
+        tagOffset = sapp4 sizeOf max a' b' c' d'
 
 instance (Storable a, Storable b, Storable c, Storable d, Storable e)
     => Storable (S5 a b c d e) where
-    sizeOf s = sapp5 sizeTagged max a b c d e
+    sizeOf s = fixPadding s $ sapp5 sizeTagged max a b c d e
       where
         ~(T5 a b c d e) = split5 s
     alignment s = sapp5 alignment max a b c d e
       where
         ~(T5 a b c d e) = split5 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp5 sizeOf max a b c d e)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S5a <$> peekShift a
             1 -> S5b <$> peekShift b
@@ -338,23 +357,28 @@ instance (Storable a, Storable b, Storable c, Storable d, Storable e)
             _ -> S5e <$> peekShift e
       where
         ~(T5 a b c d e) = split5 (unwrap ptr)
-    poke ptr (S5a a) = runPokeTagged ptr 0 a
-    poke ptr (S5b b) = runPokeTagged ptr 1 b
-    poke ptr (S5c c) = runPokeTagged ptr 2 c
-    poke ptr (S5d d) = runPokeTagged ptr 3 d
-    poke ptr (S5e e) = runPokeTagged ptr 4 e
+        tagOffset = sapp5 sizeOf max a b c d e
+    poke ptr s = case s of
+        S5a a -> runPokeTagged ptr 0 tagOffset a
+        S5b b -> runPokeTagged ptr 1 tagOffset b
+        S5c c -> runPokeTagged ptr 2 tagOffset c
+        S5d d -> runPokeTagged ptr 3 tagOffset d
+        S5e e -> runPokeTagged ptr 4 tagOffset e
+      where
+        ~(T5 a' b' c' d' e') = split5 (unwrap ptr)
+        tagOffset = sapp5 sizeOf max a' b' c' d' e'
 
 instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f)
     => Storable (S6 a b c d e f) where
-    sizeOf s = sapp6 sizeTagged max a b c d e f
+    sizeOf s = fixPadding s $ sapp6 sizeTagged max a b c d e f
       where
         ~(T6 a b c d e f) = split6 s
     alignment s = sapp6 alignment max a b c d e f
       where
         ~(T6 a b c d e f) = split6 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp6 sizeOf max a b c d e f)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S6a <$> peekShift a
             1 -> S6b <$> peekShift b
@@ -364,25 +388,30 @@ instance
             _ -> S6f <$> peekShift f
       where
         ~(T6 a b c d e f) = split6 (unwrap ptr)
-    poke ptr (S6a a) = runPokeTagged ptr 0 a
-    poke ptr (S6b b) = runPokeTagged ptr 1 b
-    poke ptr (S6c c) = runPokeTagged ptr 2 c
-    poke ptr (S6d d) = runPokeTagged ptr 3 d
-    poke ptr (S6e e) = runPokeTagged ptr 4 e
-    poke ptr (S6f f) = runPokeTagged ptr 5 f
+        tagOffset = sapp6 sizeOf max a b c d e f
+    poke ptr s = case s of
+        S6a a -> runPokeTagged ptr 0 tagOffset a
+        S6b b -> runPokeTagged ptr 1 tagOffset b
+        S6c c -> runPokeTagged ptr 2 tagOffset c
+        S6d d -> runPokeTagged ptr 3 tagOffset d
+        S6e e -> runPokeTagged ptr 4 tagOffset e
+        S6f f -> runPokeTagged ptr 5 tagOffset f
+      where
+        ~(T6 a' b' c' d' e' f') = split6 (unwrap ptr)
+        tagOffset = sapp6 sizeOf max a' b' c' d' e' f'
 
 instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f,
      Storable g)
     => Storable (S7 a b c d e f g) where
-    sizeOf s = sapp7 sizeTagged max a b c d e f g
+    sizeOf s = fixPadding s $ sapp7 sizeTagged max a b c d e f g
       where
         ~(T7 a b c d e f g) = split7 s
     alignment s = sapp7 alignment max a b c d e f g
       where
         ~(T7 a b c d e f g) = split7 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp7 sizeOf max a b c d e f g)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S7a <$> peekShift a
             1 -> S7b <$> peekShift b
@@ -393,26 +422,31 @@ instance
             _ -> S7g <$> peekShift g
       where
         ~(T7 a b c d e f g) = split7 (unwrap ptr)
-    poke ptr (S7a a) = runPokeTagged ptr 0 a
-    poke ptr (S7b b) = runPokeTagged ptr 1 b
-    poke ptr (S7c c) = runPokeTagged ptr 2 c
-    poke ptr (S7d d) = runPokeTagged ptr 3 d
-    poke ptr (S7e e) = runPokeTagged ptr 4 e
-    poke ptr (S7f f) = runPokeTagged ptr 5 f
-    poke ptr (S7g g) = runPokeTagged ptr 6 g
+        tagOffset = sapp7 sizeOf max a b c d e f g
+    poke ptr s = case s of
+        S7a a -> runPokeTagged ptr 0 tagOffset a
+        S7b b -> runPokeTagged ptr 1 tagOffset b
+        S7c c -> runPokeTagged ptr 2 tagOffset c
+        S7d d -> runPokeTagged ptr 3 tagOffset d
+        S7e e -> runPokeTagged ptr 4 tagOffset e
+        S7f f -> runPokeTagged ptr 5 tagOffset f
+        S7g g -> runPokeTagged ptr 6 tagOffset g
+      where
+        ~(T7 a' b' c' d' e' f' g') = split7 (unwrap ptr)
+        tagOffset = sapp7 sizeOf max a' b' c' d' e' f' g'
 
 instance
     (Storable a, Storable b, Storable c, Storable d, Storable e, Storable f,
      Storable g, Storable h)
     => Storable (S8 a b c d e f g h) where
-    sizeOf s = sapp8 sizeTagged max a b c d e f g h
+    sizeOf s = fixPadding s $ sapp8 sizeTagged max a b c d e f g h
       where
         ~(T8 a b c d e f g h) = split8 s
     alignment s = sapp8 alignment max a b c d e f g h
       where
         ~(T8 a b c d e f g h) = split8 s
     peek ptr = runPeek ptr $ do
-        tag <- peekTag (sapp8 sizeOf max a b c d e f g h)
+        tag <- peekTag tagOffset
         case tag of
             0 -> S8a <$> peekShift a
             1 -> S8b <$> peekShift b
@@ -424,11 +458,16 @@ instance
             _ -> S8h <$> peekShift h
       where
         ~(T8 a b c d e f g h) = split8 (unwrap ptr)
-    poke ptr (S8a a) = runPokeTagged ptr 0 a
-    poke ptr (S8b b) = runPokeTagged ptr 1 b
-    poke ptr (S8c c) = runPokeTagged ptr 2 c
-    poke ptr (S8d d) = runPokeTagged ptr 3 d
-    poke ptr (S8e e) = runPokeTagged ptr 4 e
-    poke ptr (S8f f) = runPokeTagged ptr 5 f
-    poke ptr (S8g g) = runPokeTagged ptr 6 g
-    poke ptr (S8h h) = runPokeTagged ptr 7 h
+        tagOffset = sapp8 sizeOf max a b c d e f g h
+    poke ptr s = case s of
+        S8a a -> runPokeTagged ptr 0 tagOffset a
+        S8b b -> runPokeTagged ptr 1 tagOffset b
+        S8c c -> runPokeTagged ptr 2 tagOffset c
+        S8d d -> runPokeTagged ptr 3 tagOffset d
+        S8e e -> runPokeTagged ptr 4 tagOffset e
+        S8f f -> runPokeTagged ptr 5 tagOffset f
+        S8g g -> runPokeTagged ptr 6 tagOffset g
+        S8h h -> runPokeTagged ptr 7 tagOffset h
+      where
+        ~(T8 a' b' c' d' e' f' g' h') = split8 (unwrap ptr)
+        tagOffset = sapp8 sizeOf max a' b' c' d' e' f' g' h'

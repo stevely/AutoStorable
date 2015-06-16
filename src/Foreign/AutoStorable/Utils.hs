@@ -14,6 +14,8 @@ module Foreign.AutoStorable.Utils
 ( unwrap
 , wrap
 , sizePadded
+, fixPadding
+, readBytes
 , sizeTagged
 , peekShift
 , peekTag
@@ -57,16 +59,38 @@ wrap = undefined
 -- offset after marshalling the given value. This function includes padding
 -- needed to be added to satisfy the given value's alignment constraint.
 sizePadded :: Storable a => a -> Int -> Int
-sizePadded a i = i + sizeOf a + padding
+sizePadded a i = size + padding
   where
     align = alignment a
-    padding = case i `mod` align of
-        0 -> 0
-        n -> align - n
+    size = i + sizeOf a
+    padding = (align - (size `mod` align)) `mod` align
+
+-- | Given a 'Storable' value and the base size of that value in bytes, produces
+-- the size of that value after adding padding to fulfill the value's alignment
+-- constraint.
+fixPadding :: Storable a => a -> Int -> Int
+fixPadding a i = i + padding
+  where
+    align = alignment a
+    padding = (align - (i `mod` align)) `mod` align
+
+-- | Given a 'Ptr' to a 'Storable' value, produces the byte sequence obtained
+-- from reading through that pointer.
+--
+-- Note: For little endian architectures individual fields will appear with
+-- their bytes in reverse order.
+readBytes :: Storable a => Ptr a -> IO [Int]
+readBytes ptr = evalStateT
+    (replicateM (sizeOf (unwrap ptr)) (fmap fromIntegral (peekShift cuchar)))
+    (alignPtr ptr (alignment (unwrap ptr)))
 
 -- Just to give us a proxy to guide type inference
 cchar :: CChar
 cchar = undefined
+
+-- Just to give us a proxy to guide type inference
+cuchar :: CUChar
+cuchar = undefined
 
 -- | Given a 'Storable' value, produces its size when succeeded by a 1-byte tag.
 -- This size will properly account for alignment constraints assuming the given
@@ -122,14 +146,14 @@ runPeek ptr st = evalStateT st (alignPtr ptr (alignment (unwrap ptr)))
 runPoke :: (Storable a, Monad m) => Ptr a -> StateT (Ptr a) m () -> m ()
 runPoke ptr st = evalStateT st (alignPtr ptr (alignment (unwrap ptr)))
 
--- | Given a 'Ptr', a numeric tag, and a 'Storable' value, marshal the given
--- value with the tag preceding it.
-runPokeTagged :: (Storable a, Storable b) => Ptr a -> CChar -> b -> IO ()
-runPokeTagged ptr i b = runPoke ptr $ do
+-- | Given a 'Ptr', a numeric tag, a tag offset, a 'Storable' value, marshal
+-- the given value with the tag succeeding it.
+runPokeTagged :: (Storable a, Storable b) => Ptr a -> CChar -> Int -> b -> IO ()
+runPokeTagged ptr tag offset b = runPoke ptr $ do
     ptr' <- fmap (\ptr0 -> alignPtr ptr0 (alignment b)) get
     lift $ poke (castPtr ptr' `asTypeOf` wrap b) b
-    put (ptr' `plusPtr` (sizeOf (unwrap ptr) - sizeOf i))
-    pokeShift i
+    put (ptr' `plusPtr` offset)
+    pokeShift tag
 
 sapp2 :: (Storable a, Storable b)
       => (forall x. Storable x => x -> r) -> (r -> r -> r)
